@@ -7,6 +7,7 @@ from firebase_utils import (
     get_ano_escola_id,
     get_periodos_materias,
     get_componentes_materia,
+    get_medias_aluno,
     get_notas_aluno,
     db
 )
@@ -114,7 +115,7 @@ def update_info():
         perform_login(driver, login, senha)
         debug_log("Login bem-sucedido, redirecionado para a página principal...")
 
-        ano_escolar_id = check_and_add_school_year(ano_escolar, ano_atual)
+        ano_escolar_id = check_and_add_school_year(ano_escolar)
         debug_log(f"Ano escolar ID obtido: {ano_escolar_id}")
 
         data = extract_grades(driver, login, ano_escolar_id)
@@ -134,26 +135,37 @@ def update_info():
 # Rota para obter dados completos do usuário
 @app.route('/get_user_data', methods=['POST'])
 def get_user_data():
-    data = request.json
-    login = data.get('login')
-
-    debug_log(f"Obtendo dados completos para o usuário: {login}")
-
     try:
-        user_ref = db.collection('Usuario').document(login)
-        user_doc = user_ref.get()
-        if user_doc.exists:
-            ano_escola_id = user_doc.to_dict()['ano_escola_id']
-            trimestres, materias = get_periodos_materias(ano_escola_id)
-            notas = get_notas_aluno(login)
-            debug_log(f"Dados obtidos para o usuário {login}: trimestres={trimestres}, materias={materias}, notas={notas}")
-            return jsonify({"success": True, "trimestres": trimestres, "materias": materias, "notas": notas})
-        else:
-            debug_log("Usuário não encontrado.")
-            return jsonify({"success": False, "message": "Usuário não encontrado."})
+        data = request.get_json()
+        login = data['login']
+        
+        debug_log(f"Recebendo dados do usuário: {login}")
+        
+        ano_escolar_id = get_ano_escola_id(login)
+        debug_log(f"ano_escolar_id para o usuário {login}: {ano_escolar_id}")
+        if not ano_escolar_id:
+            return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
+        
+        trimestres, materias = get_periodos_materias(ano_escolar_id)
+        debug_log(f"Trimestres obtidos: {trimestres}")
+        debug_log(f"Matérias obtidas: {materias}")
+        
+        notas = get_notas_aluno(login)
+        debug_log(f"Notas obtidas: {notas}")
+        
+        medias = get_medias_aluno(login)
+        debug_log(f"Médias obtidas: {medias}")  
+        
+        return jsonify({
+            "status": "success",
+            "trimestres": trimestres,
+            "materias": materias,
+            "notas": notas,
+            "medias": medias  
+        })
     except Exception as e:
-        logging.error(f"Erro ao obter dados do usuário: {e}")
-        return jsonify({"success": False, "message": f"Erro: {e}"})
+        logging.error(f"Erro durante a obtenção de dados do usuário: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=DEBUG_MODE)

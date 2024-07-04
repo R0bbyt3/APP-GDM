@@ -4,6 +4,8 @@ import axios from 'axios';
 import LoginScreen from './LoginScreen';
 import Dashboard from './Dashboard';
 
+const DEBUG = process.env.DEBUG === 'true';
+
 export default function App() {
   const [screen, setScreen] = useState('login');
   const [login, setLogin] = useState('');
@@ -15,50 +17,58 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
+      DEBUG && console.log('Tentando fazer login com:', { login, senha });
       const response = await axios.post(`http://${serverIp}:${serverPort}/login`, { login, senha });
       if (response.data.success) {
+        DEBUG && console.log('Login bem-sucedido:', response.data);
         const userDataResponse = await axios.post(`http://${serverIp}:${serverPort}/get_user_data`, { login });
-        if (userDataResponse.data.success) {
+        if (userDataResponse.data.status === "success") {
+          DEBUG && console.log('Dados do usuário obtidos com sucesso:', userDataResponse.data);
           setUserData(userDataResponse.data);
           setScreen('dashboard');
         } else {
-          Alert.alert('Erro', userDataResponse.data.message);
+          DEBUG && console.error('Erro ao obter dados do usuário:', userDataResponse.data.message);
+          Alert.alert('Erro', `Erro ao obter dados do usuário: ${userDataResponse.data.message}`);
         }
       } else {
-        Alert.alert('Erro', response.data.message);
+        DEBUG && console.error('Erro ao fazer login:', response.data.message);
+        Alert.alert('Erro', `Erro ao fazer login: ${response.data.message}`);
       }
     } catch (error) {
-      Alert.alert('Erro', 'Erro ao fazer login.');
-      console.error('Error logging in: ', error);
+      DEBUG && console.error('Erro ao fazer login:', error);
+      Alert.alert('Erro', 'Erro ao fazer login. Verifique sua conexão e tente novamente.');
     }
-  };
+  };  
 
   const handleCreateAccount = async () => {
     try {
+      DEBUG && console.log('Tentando criar conta com:', { login, senha });
       const response = await axios.post(`http://${serverIp}:${serverPort}/create_account`, { login, senha });
       Alert.alert('Info', response.data.message);
       if (response.data.success) {
         setScreen('login');
       }
     } catch (error) {
-      Alert.alert('Erro', 'Erro ao criar conta.');
-      console.error('Error creating account: ', console.error('Error creating account: ', error));
+      DEBUG && console.error('Erro ao criar conta:', error);
+      Alert.alert('Erro', 'Erro ao criar conta. Verifique sua conexão e tente novamente.');
     }
   };
 
   const handleUpdateInfo = async () => {
     try {
+      DEBUG && console.log('Tentando atualizar informações com:', { login, senha });
       const response = await axios.post(`http://${serverIp}:${serverPort}/update_info`, { login, senha });
       Alert.alert('Info', response.data.message);
       if (response.data.success) {
         const userDataResponse = await axios.post(`http://${serverIp}:${serverPort}/get_user_data`, { login });
         if (userDataResponse.data.success) {
+          DEBUG && console.log('Dados do usuário atualizados com sucesso:', userDataResponse.data);
           setUserData(userDataResponse.data);
         }
       }
     } catch (error) {
-      Alert.alert('Erro', 'Erro ao atualizar informações.');
-      console.error('Error updating info: ', error);
+      DEBUG && console.error('Erro ao atualizar informações:', error);
+      Alert.alert('Erro', 'Erro ao atualizar informações. Verifique sua conexão e tente novamente.');
     }
   };
 
@@ -107,4 +117,3 @@ const styles = StyleSheet.create({
     padding: 10,
   },
 });
-

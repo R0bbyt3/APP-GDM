@@ -61,27 +61,16 @@ def check_and_add_user(login, senha, ano_escolar_id):
     debug_log(f"Usuário {login} já existe.")
     return False
 
+# Ajuste na função save_to_firestore para usar o novo ID da matéria
 def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, periodo):
-    """
-    Salva várias informações no Firestore, incluindo matéria, trimestre, componentes, nota e média.
-
-    Args:
-        login (str): Login do usuário.
-        materia_nome (str): Nome da matéria.
-        boletim (str): Descrição do boletim.
-        titulo (str): Título do componente.
-        peso (float): Peso do componente.
-        maximo (float): Nota máxima do componente.
-        nota_valor (float): Valor da nota.
-        media_atual (float): Média atual da matéria.
-        ano_escolar_id (str): ID do ano escolar associado.
-        periodo (str): Período associado à nota.
-    """
     debug_log(f"Salvando informações no Firestore para usuário {login}")
+
+    # Gerar ID único para a matéria
+    materia_id = f"{ano_escolar_id}_{materia_nome}"
 
     # Adicionar/Verificar Matéria
     debug_log(f"Verificando matéria {materia_nome}")
-    materia_ref = db.collection('Materia').document(materia_nome)
+    materia_ref = db.collection('Materia').document(materia_id)
     if not materia_ref.get().exists:
         debug_log(f"Matéria {materia_nome} não encontrada. Adicionando nova matéria.")
         materia_ref.set({'nome': materia_nome, 'ano_escola_id': ano_escolar_id})
@@ -101,7 +90,8 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
         'peso': peso,
         'maximo': maximo
     }
-    componente_ref = db.collection('Componente_Materia').document(f'{materia_nome}_{titulo}')
+    componente_id = f'{materia_id}_{titulo}'
+    componente_ref = db.collection('Componente_Materia').document(componente_id)
     if not componente_ref.get().exists:
         debug_log(f"Componente {titulo} da matéria {materia_nome} não encontrado. Adicionando novo componente.")
         componente_ref.set(componente_data)
@@ -118,8 +108,9 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
     nota_ref.set(nota_data)
 
     # Adicionar Média Atual
-    media_ref = db.collection('Media_Atual').document(f'{materia_nome}_{boletim}')
+    media_ref = db.collection('Media_Atual').document(f'{login}_{materia_id}_{boletim}')
     media_data = {
+        'usuario_id': login,
         'materia_id': materia_ref.id,
         'trimestre_id': trimestre_ref.id,
         'media': convert_to_float(media_atual)
@@ -196,6 +187,34 @@ def get_componentes_materia(materia_id):
     except Exception as e:
         debug_log(f"Erro ao obter componentes da matéria {materia_id}: {e}")
         return None
+
+def get_medias_aluno(usuario_id):
+    """
+    Obtém as médias de um aluno específico.
+
+    Args:
+        usuario_id (str): ID do usuário.
+
+    Returns:
+        dict: Dicionário de médias do aluno, agrupadas por período e matéria.
+    """
+    debug_log(f"Obtendo médias para o usuário {usuario_id}")
+    try:
+        medias_ref = db.collection('Media_Atual').where('usuario_id', '==', usuario_id).stream()
+        medias = {}
+        for doc in medias_ref:
+            media_data = doc.to_dict()
+            periodo = media_data.get('trimestre_id')
+            materia = media_data.get('materia_id')
+            if periodo not in medias:
+                medias[periodo] = {}
+            medias[periodo][materia] = media_data
+        debug_log(f"Médias obtidas: {medias}")
+        return medias
+    except Exception as e:
+        debug_log(f"Erro ao obter médias do aluno {usuario_id}: {e}")
+        return None
+
 
 def get_notas_aluno(usuario_id):
     """
