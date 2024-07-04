@@ -1,7 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime 
-from utils import convert_to_float
+from utils import convert_to_float, strip_whitespace
 
 # Inicializar o Firebase
 cred = credentials.Certificate("firebase_credentials.json")
@@ -50,6 +50,11 @@ def check_and_add_user(login, senha, ano_escolar_id):
     Returns:
         bool: True se o usuário foi adicionado, False se já existia.
     """
+    data = {'login': login, 'senha': senha}
+    data = strip_whitespace(data, ['login', 'senha'])
+    login = data['login']
+    senha = data['senha']
+    
     debug_log(f"Verificando usuário {login}")
     user_ref = db.collection('Usuario').document(login)
     user_doc = user_ref.get()
@@ -60,6 +65,7 @@ def check_and_add_user(login, senha, ano_escolar_id):
         return True
     debug_log(f"Usuário {login} já existe.")
     return False
+
 
 # Ajuste na função save_to_firestore para usar o novo ID da matéria
 def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, periodo):
@@ -128,6 +134,10 @@ def get_ano_escola_id(login):
     Returns:
         str: ID do ano escolar ou None se não encontrado.
     """
+    data = {'login': login}
+    data = strip_whitespace(data, ['login'])
+    login = data['login']
+    
     debug_log(f"Obtendo ano_escola_id para o usuário {login}")
     try:
         user_ref = db.collection('Usuario').document(login)
@@ -198,6 +208,10 @@ def get_medias_aluno(usuario_id):
     Returns:
         dict: Dicionário de médias do aluno, agrupadas por período e matéria.
     """
+    data = {'usuario_id': usuario_id}
+    data = strip_whitespace(data, ['usuario_id'])
+    usuario_id = data['usuario_id']
+
     debug_log(f"Obtendo médias para o usuário {usuario_id}")
     try:
         medias_ref = db.collection('Media_Atual').where('usuario_id', '==', usuario_id).stream()
@@ -215,7 +229,6 @@ def get_medias_aluno(usuario_id):
         debug_log(f"Erro ao obter médias do aluno {usuario_id}: {e}")
         return None
 
-
 def get_notas_aluno(usuario_id):
     """
     Obtém as notas de um aluno específico.
@@ -226,6 +239,10 @@ def get_notas_aluno(usuario_id):
     Returns:
         dict: Dicionário de notas do aluno, agrupadas por período.
     """
+    data = {'usuario_id': usuario_id}
+    data = strip_whitespace(data, ['usuario_id'])
+    usuario_id = data['usuario_id']
+
     debug_log(f"Obtendo notas para o usuário {usuario_id}")
     try:
         notas_ref = db.collection('Nota').where('usuario_id', '==', usuario_id).stream()
@@ -241,4 +258,3 @@ def get_notas_aluno(usuario_id):
     except Exception as e:
         debug_log(f"Erro ao obter notas do aluno {usuario_id}: {e}")
         return None
-

@@ -1,6 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import logging
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from markupsafe import escape
+from validation_schemas import UserSchema, validate_input
 from firebase_utils import (
     check_and_add_school_year,
     check_and_add_user,
@@ -12,11 +15,14 @@ from firebase_utils import (
     db
 )
 from selenium_utils import init_driver, perform_login, extract_grades
+import os
 
 app = Flask(__name__)
+app.secret_key = "abacaxi" # Chave secreta
+csrf = CSRFProtect(app)  # Inicializa a proteção CSRF
 CORS(app)
 
-# Configuração do logger
+# Configuração do logger para incluir mensagens de debug
 logging.basicConfig(level=logging.INFO)
 
 # Variável para controle de debug
@@ -27,14 +33,50 @@ def debug_log(message):
     if DEBUG_MODE:
         logging.info(message)
 
-# Ajuste na rota de criação de conta (app.py ou no arquivo de rotas correspondente)
-@app.route('/create_account', methods=['POST'])
-def create_account():
-    data = request.json
-    login = data.get('login')
-    senha = data.get('senha')
+def login_user(login):
+    session['user'] = login
+    session.permanent = True  # A sessão expira após um período de inatividade
 
-    debug_log(f"Dados recebidos para criar conta: login={login}")
+def logout_user():
+    session.pop('user', None)
+
+def is_logged_in():
+    return 'user' in session
+
+def get_logged_in_user():
+    return session.get('user')
+
+# Adiciona cabeçalhos de segurança
+@app.after_request
+def set_security_headers(response):
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'"
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
+
+# Rota para fornecer o token CSRF
+@app.route('/csrf-token', methods=['GET'])
+def csrf_token():
+    token = generate_csrf()
+    return jsonify(csrf_token=token)
+
+# Rota para criar conta
+@app.route('/create_account', methods=['POST'])
+@csrf.exempt  # Exemplo de como desativar CSRF para uma rota específica (não recomendado)
+def create_account():
+    # Recebe os dados JSON do cliente
+    data = request.json
+    debug_log(f"Dados recebidos para criação de conta: {data}")
+    
+    # Valida os dados recebidos
+    validation_errors = validate_input(data, UserSchema)
+    if validation_errors:
+        debug_log(f"Erros de validação: {validation_errors}")
+        return jsonify({"success": False, "message": validation_errors}), 400
+
+    login = escape(data.get('login'))
+    senha = escape(data.get('senha'))
 
     driver = init_driver()
 
@@ -66,20 +108,28 @@ def create_account():
 
     return jsonify({"success": success, "message": message, "data": data})
 
-
 # Rota para login
 @app.route('/login', methods=['POST'])
+@csrf.exempt  # Desativar CSRF para a rota de login
 def login_route():
+    # Recebe os dados JSON do cliente
     data = request.json
-    login = data.get('login')
-    senha = data.get('senha')
+    debug_log(f"Dados recebidos para login: {data}")
+    
+    # Valida os dados recebidos
+    validation_errors = validate_input(data, UserSchema)
+    if validation_errors:
+        debug_log(f"Erros de validação: {validation_errors}")
+        return jsonify({"success": False, "message": validation_errors}), 400
 
-    debug_log(f"Tentativa de login com: login={login}")
+    login = escape(data.get('login'))
+    senha = escape(data.get('senha'))
 
     try:
         user_ref = db.collection('Usuario').document(login)
         user_doc = user_ref.get()
         if user_doc.exists and user_doc.to_dict()['senha'] == senha:
+            login_user(login)
             message = "Login bem-sucedido."
             success = True
             ano_escola_id = user_doc.to_dict()['ano_escola_id']
@@ -97,14 +147,28 @@ def login_route():
 
     return jsonify({"success": success, "message": message, "ano_escola_id": ano_escola_id})
 
+# Rota para logout
+@app.route('/logout', methods=['POST'])
+def logout():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
+    
+    logout_user()
+    return jsonify({"success": True, "message": "Logout bem-sucedido."})
+
 # Rota para atualizar informações
 @app.route('/update_info', methods=['POST'])
+@csrf.exempt  # Desativar CSRF para a rota de atualização de informações
 def update_info():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
+    
+    # Recebe os dados JSON do cliente
     data = request.json
-    login = data.get('login')
-    senha = data.get('senha')
-    ano_escolar = data.get('ano_escolar')
-    ano_atual = data.get('ano_atual')
+    login = escape(data.get('login'))
+    senha = escape(data.get('senha'))
+    ano_escolar = escape(data.get('ano_escolar'))
+    ano_atual = escape(data.get('ano_atual'))
 
     debug_log(f"Iniciando atualização de informações para: login={login}, ano_escolar={ano_escolar}, ano_atual={ano_atual}")
 
@@ -135,9 +199,13 @@ def update_info():
 # Rota para obter dados completos do usuário
 @app.route('/get_user_data', methods=['POST'])
 def get_user_data():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
+
     try:
+        # Recebe os dados JSON do cliente
         data = request.get_json()
-        login = data['login']
+        login = escape(data['login'])
         
         debug_log(f"Recebendo dados do usuário: {login}")
         

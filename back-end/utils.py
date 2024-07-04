@@ -1,7 +1,30 @@
-# utils.py
-
 def convert_to_float(value):
+    """
+    Converte um valor para float, substituindo vírgulas por pontos.
+
+    Args:
+        value (str): O valor a ser convertido.
+
+    Returns:
+        float: O valor convertido em float, ou None se ocorrer um erro.
+    """
     try:
         return float(value.replace(',', '.'))
     except ValueError:
         return None
+
+def strip_whitespace(data, keys):
+    """
+    Remove espaços em branco no início e no final dos valores para as chaves fornecidas.
+
+    Args:
+        data (dict): Dicionário contendo os dados de entrada.
+        keys (list): Lista de chaves cujos valores devem ter espaços em branco removidos.
+
+    Returns:
+        dict: Dicionário com os valores das chaves especificadas sem espaços em branco no início e no final.
+    """
+    for key in keys:
+        if key in data:
+            data[key] = data[key].strip()
+    return data

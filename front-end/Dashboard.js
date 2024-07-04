@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Button, ScrollView } from 'react-native';
 
-const DEBUG = process.env.DEBUG === 'true';
+const DEBUG = process.env.DEBUG === 'true'; // Variável para habilitar/desabilitar debug
 
 export default function Dashboard({ login, userData, setScreen, handleUpdateInfo }) {
+  // Estados para armazenar períodos, matérias, notas e médias
   const [periodos, setPeriodos] = useState(userData.trimestres || {});
   const [materias, setMaterias] = useState(userData.materias || {});
   const [notas, setNotas] = useState(userData.notas || {});
   const [medias, setMedias] = useState(userData.medias || {});
 
+  // Hook para atualizar os estados quando os dados do usuário mudam
   useEffect(() => {
     if (userData) {
       DEBUG && console.log('UserData received:', userData);
@@ -19,6 +21,7 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
     }
   }, [userData]);
 
+  // Função para obter o nome do período baseado no ID
   const getPeriodoNome = (id) => {
     switch (id) {
       case 'NPT': return 'Primeiro período';
@@ -28,13 +31,14 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
     }
   };
 
+  // Função para renderizar os componentes de uma matéria
   const renderComponentesMateria = (materiaId, periodoId) => {
     const componentesMateria = notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) || [];
     if (componentesMateria.length === 0) return null;
 
     DEBUG && console.log(`Componentes for ${materiaId} in ${periodoId}:`, componentesMateria);
     return componentesMateria.map((compData, index) => {
-      const titulo = compData.componente_materia_id.split('_').slice(2).join('_');
+      const titulo = compData.componente_materia_id.split('_').slice(2).join('_'); // Remove a parte do ID da matéria
       return (
         <View key={index} style={styles.componenteContainer}>
           <Text style={styles.componenteText}>Título: {titulo}</Text>
@@ -46,6 +50,7 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
     });
   };
 
+  // Função para renderizar a média de uma matéria
   const renderMediaMateria = (materiaId, periodoId) => {
     const media = medias[periodoId]?.[materiaId]?.media || 'Não disponível';
     DEBUG && console.log(`Render media for ${materiaId} in ${periodoId}: ${media}`);
@@ -56,6 +61,7 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
     );
   };
 
+  // Função para renderizar os dados
   const renderData = () => {
     if (!Object.keys(periodos).length || !Object.keys(materias).length) return null;
 
@@ -89,6 +95,7 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
   );
 }
 
+// Estilos para os componentes
 const styles = StyleSheet.create({
   container: {
     flex: 1,
