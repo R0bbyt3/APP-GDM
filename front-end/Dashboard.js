@@ -9,6 +9,7 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
   const [materias, setMaterias] = useState(userData.materias || {});
   const [notas, setNotas] = useState(userData.notas || {});
   const [medias, setMedias] = useState(userData.medias || {});
+  const [nome, setNome] = useState(userData.nome || 'Usuário');
 
   // Hook para atualizar os estados quando os dados do usuário mudam
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
       setMaterias(userData.materias);
       setNotas(userData.notas);
       setMedias(userData.medias);
+      setNome(userData.nome);
     }
   }, [userData]);
 
@@ -85,7 +87,8 @@ export default function Dashboard({ login, userData, setScreen, handleUpdateInfo
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Bem-vindo, {login}</Text>
+      <Text style={styles.title}>Bem-vindo</Text>
+      <Text style={styles.title}>{nome}</Text>
       <Button title="Atualizar Informações" onPress={handleUpdateInfo} />
       <ScrollView style={styles.scrollView}>
         {renderData()}

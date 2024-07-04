@@ -65,7 +65,7 @@ def extract_school_year(driver):
 
 def perform_login(driver, login, senha):
     """
-    Realiza o login no site especificado e extrai o ano escolar.
+    Realiza o login no site especificado e extrai o ano escolar e o nome do usuário.
 
     Args:
         driver (webdriver): Instância do WebDriver.
@@ -73,7 +73,7 @@ def perform_login(driver, login, senha):
         senha (str): Senha do usuário.
 
     Returns:
-        str: Ano escolar extraído após o login.
+        tuple: Ano escolar e nome do usuário extraídos após o login.
     """
     debug_log(f"Iniciando login para o usuário: {login}, com a senha: {senha}")
     driver.get('https://www.escola1.info/cruzeiro/')
@@ -87,13 +87,19 @@ def perform_login(driver, login, senha):
     debug_log("Login realizado com sucesso")
     
     # Certifique-se de que está na página correta
+    driver.get('https://www.escola1.info/site/Principal/Main_Princ_Shared.asp')
+    nome_usuario = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'td.MensgBVTDsup b'))).text
+    debug_log(f"Nome do usuário extraído: {nome_usuario}")
+    
+    # Redireciona para a página de boletim
     boletim_base_url = 'https://www.escola1.info/site/Servicos/Essencial/Boletim/BoletimNovo.asp'
     driver.get(boletim_base_url)
     debug_log("Página de boletim carregada")
     
     # Extraindo ano escolar após login
-    return extract_school_year(driver)
-
+    ano_escolar = extract_school_year(driver)
+    
+    return ano_escolar, nome_usuario
 
 def extract_grades(driver, login, ano_escolar_id):
     """

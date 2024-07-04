@@ -7,7 +7,7 @@ from validation_schemas import UserSchema, validate_input
 from firebase_utils import (
     check_and_add_school_year,
     check_and_add_user,
-    get_ano_escola_id,
+    get_ano_escola_id_usuario,
     get_periodos_materias,
     get_componentes_materia,
     get_medias_aluno,
@@ -18,7 +18,7 @@ from selenium_utils import init_driver, perform_login, extract_grades
 import os
 
 app = Flask(__name__)
-app.secret_key = "abacaxi" # Chave secreta
+app.secret_key = "abacaxi" # Crhave secreta
 csrf = CSRFProtect(app)  # Inicializa a proteção CSRF
 CORS(app)
 
@@ -71,7 +71,7 @@ def create_account():
     
     # Valida os dados recebidos
     validation_errors = validate_input(data, UserSchema)
-    if validation_errors:
+    if (validation_errors):
         debug_log(f"Erros de validação: {validation_errors}")
         return jsonify({"success": False, "message": validation_errors}), 400
 
@@ -82,13 +82,13 @@ def create_account():
 
     try:
         debug_log("Iniciando processo de criação de conta...")
-        ano_escolar = perform_login(driver, login, senha)
-        debug_log(f"Credenciais válidas, procedendo com a criação de conta com ano escolar: {ano_escolar}")
+        ano_escolar, nome = perform_login(driver, login, senha)  # Extraindo ano escolar e nome
+        debug_log(f"Credenciais válidas, procedendo com a criação de conta com ano escolar: {ano_escolar} e nome: {nome}")
 
         ano_escolar_id = check_and_add_school_year(ano_escolar)
         debug_log(f"Ano escolar ID obtido: {ano_escolar_id}")
 
-        if check_and_add_user(login, senha, ano_escolar_id):
+        if check_and_add_user(login, senha, ano_escolar_id, nome):
             data = extract_grades(driver, login, ano_escolar_id)
             message = "Conta criada com sucesso, notas extraídas e salvas."
             success = True
@@ -209,8 +209,8 @@ def get_user_data():
         
         debug_log(f"Recebendo dados do usuário: {login}")
         
-        ano_escolar_id = get_ano_escola_id(login)
-        debug_log(f"ano_escolar_id para o usuário {login}: {ano_escolar_id}")
+        ano_escolar_id, nome = get_ano_escola_id_usuario(login)
+        debug_log(f"ano_escolar_id para o usuário {login}: {ano_escolar_id}, nome: {nome}")
         if not ano_escolar_id:
             return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
         
@@ -222,14 +222,15 @@ def get_user_data():
         debug_log(f"Notas obtidas: {notas}")
         
         medias = get_medias_aluno(login)
-        debug_log(f"Médias obtidas: {medias}")  
-        
+        debug_log(f"Médias obtidas: {medias}")
+
         return jsonify({
             "status": "success",
             "trimestres": trimestres,
             "materias": materias,
             "notas": notas,
-            "medias": medias  
+            "medias": medias,
+            "nome": nome  
         })
     except Exception as e:
         logging.error(f"Erro durante a obtenção de dados do usuário: {e}")

@@ -37,7 +37,7 @@ def check_and_add_school_year(ano_escolar):
         debug_log(f"Ano escolar {ano_escolar} adicionado com ID: {ano_escolar_doc[1].id}")
         return ano_escolar_doc[1].id
     
-def check_and_add_user(login, senha, ano_escolar_id):
+def check_and_add_user(login, senha, ano_escolar_id, nome):
     """
     Verifica se o usuário já existe no Firestore. 
     Se não existir, adiciona um novo usuário.
@@ -46,21 +46,23 @@ def check_and_add_user(login, senha, ano_escolar_id):
         login (str): Login do usuário.
         senha (str): Senha do usuário.
         ano_escolar_id (str): ID do ano escolar associado ao usuário.
+        nome (str): Nome do usuário.
 
     Returns:
         bool: True se o usuário foi adicionado, False se já existia.
     """
-    data = {'login': login, 'senha': senha}
-    data = strip_whitespace(data, ['login', 'senha'])
+    data = {'login': login, 'senha': senha, 'nome': nome}
+    data = strip_whitespace(data, ['login', 'senha', 'nome'])
     login = data['login']
     senha = data['senha']
+    nome = data['nome']
     
     debug_log(f"Verificando usuário {login}")
     user_ref = db.collection('Usuario').document(login)
     user_doc = user_ref.get()
     if not user_doc.exists:
         debug_log(f"Usuário {login} não encontrado. Adicionando novo usuário.")
-        user_data = {'id': login, 'senha': senha, 'ano_escola_id': ano_escolar_id}
+        user_data = {'id': login, 'senha': senha, 'ano_escola_id': ano_escolar_id, 'nome': nome}
         user_ref.set(user_data)
         return True
     debug_log(f"Usuário {login} já existe.")
@@ -124,15 +126,15 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
     debug_log(f"Adicionando média atual para a matéria {materia_nome} no boletim {boletim}")
     media_ref.set(media_data)
 
-def get_ano_escola_id(login):
+def get_ano_escola_id_usuario(login):
     """
-    Obtém o ID do ano escolar associado ao login do usuário.
+    Obtém o ID do ano escolar e o nome associado ao login do usuário.
 
     Args:
         login (str): Login do usuário.
 
     Returns:
-        str: ID do ano escolar ou None se não encontrado.
+        tuple: ID do ano escolar e nome do usuário ou (None, None) se não encontrado.
     """
     data = {'login': login}
     data = strip_whitespace(data, ['login'])
@@ -143,15 +145,18 @@ def get_ano_escola_id(login):
         user_ref = db.collection('Usuario').document(login)
         user_doc = user_ref.get()
         if user_doc.exists:
-            ano_escola_id = user_doc.to_dict()['ano_escola_id']
-            debug_log(f"ano_escola_id para o usuário {login}: {ano_escola_id}")
-            return ano_escola_id
+            user_data = user_doc.to_dict()
+            ano_escola_id = user_data['ano_escola_id']
+            nome = user_data.get('nome', 'Usuário')
+            debug_log(f"ano_escola_id para o usuário {login}: {ano_escola_id}, nome: {nome}")
+            return ano_escola_id, nome
         else:
             debug_log(f"Usuário {login} não encontrado.")
-            return None
+            return None, None
     except Exception as e:
         debug_log(f"Erro ao obter ano_escola_id para o usuário {login}: {e}")
-        return None
+        return None, None
+
 
 def get_periodos_materias(ano_escola_id):
     """
