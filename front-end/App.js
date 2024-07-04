@@ -1,21 +1,29 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Button, TextInput, Text, Alert, ScrollView } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Alert } from 'react-native';
 import axios from 'axios';
+import LoginScreen from './LoginScreen';
+import Dashboard from './Dashboard';
 
 export default function App() {
   const [screen, setScreen] = useState('login');
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
-  const [anoEscolar, setAnoEscolar] = useState('');
-  const [anoAtual, setAnoAtual] = useState('');
-  const [data, setData] = useState(null);
+  const [userData, setUserData] = useState(null);
+
+  const serverIp = '192.168.1.9';
+  const serverPort = '5000';
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://192.168.1.9:5000/login', { login, senha });
+      const response = await axios.post(`http://${serverIp}:${serverPort}/login`, { login, senha });
       if (response.data.success) {
-        setData(response.data.data);
-        setScreen('dashboard');
+        const userDataResponse = await axios.post(`http://${serverIp}:${serverPort}/get_user_data`, { login });
+        if (userDataResponse.data.success) {
+          setUserData(userDataResponse.data);
+          setScreen('dashboard');
+        } else {
+          Alert.alert('Erro', userDataResponse.data.message);
+        }
       } else {
         Alert.alert('Erro', response.data.message);
       }
@@ -27,23 +35,26 @@ export default function App() {
 
   const handleCreateAccount = async () => {
     try {
-      const response = await axios.post('http://192.168.1.9:5000/create_account', { login, senha, ano_escolar: anoEscolar, ano_atual: anoAtual });
+      const response = await axios.post(`http://${serverIp}:${serverPort}/create_account`, { login, senha });
       Alert.alert('Info', response.data.message);
       if (response.data.success) {
         setScreen('login');
       }
     } catch (error) {
       Alert.alert('Erro', 'Erro ao criar conta.');
-      console.error('Error creating account: ', error);
+      console.error('Error creating account: ', console.error('Error creating account: ', error));
     }
   };
 
   const handleUpdateInfo = async () => {
     try {
-      const response = await axios.post('http://192.168.1.9:5000/update_info', { login, senha, ano_escolar: anoEscolar, ano_atual: anoAtual });
+      const response = await axios.post(`http://${serverIp}:${serverPort}/update_info`, { login, senha });
       Alert.alert('Info', response.data.message);
       if (response.data.success) {
-        setData(response.data.data);
+        const userDataResponse = await axios.post(`http://${serverIp}:${serverPort}/get_user_data`, { login });
+        if (userDataResponse.data.success) {
+          setUserData(userDataResponse.data);
+        }
       }
     } catch (error) {
       Alert.alert('Erro', 'Erro ao atualizar informações.');
@@ -51,84 +62,29 @@ export default function App() {
     }
   };
 
-  const renderData = () => {
-    if (!data) return null;
-
-    return data.map((item, index) => (
-      <View key={index} style={styles.dataItem}>
-        <Text style={styles.dataTitle}>Componente: {item.componente_materia_id}</Text>
-        <Text>Nota: {item.nota}</Text>
-        <Text>Usuário: {item.usuario_id}</Text>
-      </View>
-    ));
-  };
-
-  if (screen === 'login') {
+  if (screen === 'login' || screen === 'createAccount') {
     return (
-      <View style={styles.container}>
-        <TextInput
-          style={styles.input}
-          placeholder="Usuário"
-          value={login}
-          onChangeText={setLogin}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-        />
-        <Button title="Login" onPress={handleLogin} />
-        <Button title="Criar Conta" onPress={() => setScreen('createAccount')} />
-      </View>
-    );
-  }
-
-  if (screen === 'createAccount') {
-    return (
-      <View style={styles.container}>
-        <TextInput
-          style={styles.input}
-          placeholder="Usuário"
-          value={login}
-          onChangeText={setLogin}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Ano Escolar"
-          value={anoEscolar}
-          onChangeText={setAnoEscolar}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Ano Atual"
-          value={anoAtual}
-          onChangeText={setAnoAtual}
-        />
-        <Button title="Criar Conta" onPress={handleCreateAccount} />
-        <Button title="Voltar ao Login" onPress={() => setScreen('login')} />
-      </View>
+      <LoginScreen
+        login={login}
+        setLogin={setLogin}
+        senha={senha}
+        setSenha={setSenha}
+        handleLogin={handleLogin}
+        handleCreateAccount={handleCreateAccount}
+        setScreen={setScreen}
+        screen={screen}
+      />
     );
   }
 
   if (screen === 'dashboard') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Bem-vindo, {login}</Text>
-        <Button title="Atualizar Informações" onPress={handleUpdateInfo} />
-        <ScrollView style={styles.scrollView}>
-          {renderData()}
-        </ScrollView>
-        <Button title="Sair" onPress={() => setScreen('login')} />
-      </View>
+      <Dashboard
+        login={login}
+        userData={userData}
+        setScreen={setScreen}
+        handleUpdateInfo={handleUpdateInfo}
+      />
     );
   }
 
@@ -150,22 +106,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  scrollView: {
-    marginVertical: 20,
-    width: '100%',
-  },
-  dataItem: {
-    backgroundColor: '#f9f9f9',
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 5,
-  },
-  dataTitle: {
-    fontWeight: 'bold',
-  },
 });
+
