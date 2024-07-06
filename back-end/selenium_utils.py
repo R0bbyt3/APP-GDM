@@ -151,6 +151,7 @@ def extract_subject_data(driver, login, ano_escolar_id, boletim):
         debug_log(f"Extraindo dados da matéria: {materia_nome}")
         
         calculo = materia.find_element(By.CSS_SELECTOR, 'td[class="Tab1subTitulo"]').text
+        debug_log(f"Calculo extraído para a matéria {materia_nome}: {calculo}")
         
         componentes = materia.find_elements(By.CSS_SELECTOR, 'td[class="Tab3TituloCol"]')
         notas = materia.find_elements(By.CSS_SELECTOR, 'td[class="Tab1Texto"]')
@@ -161,28 +162,28 @@ def extract_subject_data(driver, login, ano_escolar_id, boletim):
 
         materia_data = {
             "materia_nome": materia_nome,
-            "calculo": calculo,
             "componentes": []
         }
 
         for comp, nota in zip(componentes, notas):
             componente_info = comp.get_attribute("title").split('\n')
             titulo = capitalize_component_name(componente_info[0])  # Padronizando nome do componente
+            pequeno_nome = comp.get_attribute('innerHTML').split('<br>')[0].strip()  # Pegando o nome antes da tag <br>
             peso = convert_to_float(componente_info[1].split(':')[1])
             maximo = convert_to_float(componente_info[2].split(':')[1])
-            componente_id = comp.text.strip()
             nota_valor = convert_to_float(nota.text.strip()) if nota.text.strip() else -1
 
-            debug_log(f"Salvando componente: {titulo}, nota: {nota_valor}")
+            debug_log(f"Salvando componente: {titulo}, nota: {nota_valor}, pequeno nome: {pequeno_nome}")
 
             componente_data = {
                 'titulo': titulo,
+                'pequeno_nome': pequeno_nome,
                 'peso': peso,
                 'maximo': maximo,
                 'nota': nota_valor
             }
 
-            save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, boletim)
+            save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, boletim, calculo, pequeno_nome)
             materia_data["componentes"].append(componente_data)
         
         boletim_data.append(materia_data)

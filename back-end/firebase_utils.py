@@ -70,7 +70,7 @@ def check_and_add_user(login, senha, ano_escolar_id, nome):
 
 
 # Ajuste na função save_to_firestore para usar o novo ID da matéria
-def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, periodo):
+def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, periodo, calculo, pequeno_nome):
     debug_log(f"Salvando informações no Firestore para usuário {login}")
 
     # Gerar ID único para a matéria
@@ -81,7 +81,7 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
     materia_ref = db.collection('Materia').document(materia_id)
     if not materia_ref.get().exists:
         debug_log(f"Matéria {materia_nome} não encontrada. Adicionando nova matéria.")
-        materia_ref.set({'nome': materia_nome, 'ano_escola_id': ano_escolar_id})
+        materia_ref.set({'nome': materia_nome, 'ano_escola_id': ano_escolar_id, 'calculo': calculo})
 
     # Adicionar/Verificar Trimestre
     debug_log(f"Verificando boletim {boletim}")
@@ -95,13 +95,14 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
         'materia_id': materia_ref.id,
         'trimestre_id': trimestre_ref.id,
         'titulo': titulo,
+        'pequeno_nome': pequeno_nome,
         'peso': peso,
         'maximo': maximo
     }
-    componente_id = f'{materia_id}_{titulo}'
+    componente_id = f'{materia_id}_{titulo}_{pequeno_nome}'
     componente_ref = db.collection('Componente_Materia').document(componente_id)
     if not componente_ref.get().exists:
-        debug_log(f"Componente {titulo} da matéria {materia_nome} não encontrado. Adicionando novo componente.")
+        debug_log(f"Componente {titulo} com pequeno nome {pequeno_nome} da matéria {materia_nome} não encontrado. Adicionando novo componente.")
         componente_ref.set(componente_data)
 
     # Adicionar Nota
@@ -112,7 +113,7 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
         'periodo': periodo  # Adicionando o período à nota
     }
     nota_ref = db.collection('Nota').document(f'{login}_{componente_ref.id}_{periodo}')
-    debug_log(f"Adicionando nota para o usuário {login} no componente {titulo} da matéria {materia_nome}")
+    debug_log(f"Adicionando nota para o usuário {login} no componente {titulo} com pequeno nome {pequeno_nome} da matéria {materia_nome}")
     nota_ref.set(nota_data)
 
     # Adicionar Média Atual
@@ -125,6 +126,14 @@ def save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_v
     }
     debug_log(f"Adicionando média atual para a matéria {materia_nome} no boletim {boletim}")
     media_ref.set(media_data)
+
+    # Adicionar/Verificar Calculo
+    debug_log(f"Verificando cálculo para a matéria {materia_nome} e período {periodo}")
+    calculo_ref = db.collection('Calculo_Materia_Periodo').document(f'{materia_id}_{periodo}')
+    if not calculo_ref.get().exists:
+        debug_log(f"Cálculo para a matéria {materia_nome} e período {periodo} não encontrado. Adicionando novo cálculo.")
+        calculo_ref.set({'materia_id': materia_ref.id, 'trimestre_id': trimestre_ref.id, 'calculo': calculo})
+
 
 def get_ano_escola_id_usuario(login):
     """
@@ -178,10 +187,15 @@ def get_periodos_materias(ano_escola_id):
         materias = {doc.id: doc.to_dict()['nome'] for doc in materias_ref}
         debug_log(f"Matérias obtidas: {materias}\n\n")
 
-        return trimestres, materias
+        calculos_ref = db.collection('Calculo_Materia_Periodo').stream()
+        calculos = {doc.id: doc.to_dict() for doc in calculos_ref}
+        debug_log(f"Cálculos obtidos: {calculos}\n\n")
+
+        return trimestres, materias, calculos
     except Exception as e:
         debug_log(f"Erro ao obter períodos e matérias: {e}")
-        return None, None
+        return None, None, None
+
 
 def get_componentes_materia(materia_id):
     """

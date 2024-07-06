@@ -22,7 +22,7 @@ export default function Dashboard({ userData, handleLogout }) {
   const renderContent = () => {
     switch (selectedScreen) {
       case 'notas':
-        return <Notas periodos={userData.trimestres} materias={userData.materias} notas={userData.notas} medias={userData.medias} componentes={userData.componentes} />;
+        return <Notas periodos={userData.trimestres} materias={userData.materias} notas={userData.notas} medias={userData.medias} componentes={userData.componentes} calculos={userData.calculos} />;
       case 'info':
         return <Info />;
       default:
@@ -32,13 +32,13 @@ export default function Dashboard({ userData, handleLogout }) {
           </View>
         );
     }
-  };
+  };  
 
   return (
     <View style={styles.container}>
       <View style={styles.topOverlay}>
         <View style={styles.topBar}>
-          <View>
+          <View style={styles.welcomeContainer}>
             <Text style={styles.welcomeText}>Bem-Vindo(a),</Text>
             <Text style={styles.userName}>{userData.nome}</Text>
           </View>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     width: '100%',
-    height: height * 0.15, // 15% da altura da tela
+    height: '15%', // Proporcional à tela
     backgroundColor: '#0F1920',
     justifyContent: 'flex-end',
   },
@@ -94,8 +94,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05, // 5% da largura da tela
-    paddingBottom: height * 0.015, // 1.5% da altura da tela
+    paddingHorizontal: '5%', // Proporcional à tela
+    paddingBottom: '1.5%', // Proporcional à tela
+  },
+  welcomeContainer: {
+    width: '60%', // 60% da largura da tela
   },
   welcomeText: {
     color: '#CDE4DE',
@@ -110,23 +113,24 @@ const styles = StyleSheet.create({
   },
   topBarIcons: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '40%', // 40% da largura da tela
   },
   icon: {
-    width: width * 0.1, // 10% da largura da tela
-    height: width * 0.1, // 10% da largura da tela
-    marginLeft: width * 0.04, // 4% da largura da tela
+    width: width * 0.12, // 12% da largura da tela (maior)
+    height: width * 0.12, // 12% da largura da tela (maior)
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: height * 0.05, // 15% da altura da tela
+    marginTop: '5%', // Proporcional à tela
   },
   bottomOverlay: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: height * 0.12, // 12% da altura da tela
+    height: '12%', // Proporcional à tela
     backgroundColor: '#0F1920',
     justifyContent: 'center',
   },
@@ -135,16 +139,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: width * 0.05, // 5% da largura da tela
+    paddingHorizontal: '5%', // Proporcional à tela
   },
   bottomBarItem: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: '30%', // 30% da largura da tela
+    width: '30%', // Proporcional à tela
   },
   bottomIcon: {
-    width: width * 0.1, // 10% da largura da tela
-    height: width * 0.1, // 10% da largura da tela
+    width: width * 0.12, // 12% da largura da tela (maior)
+    height: width * 0.12, // 12% da largura da tela (maior)
     marginBottom: height * 0.01, // 1% da altura da tela
   },
   bottomBarText: {

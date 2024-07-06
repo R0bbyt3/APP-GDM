@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { create, all } from 'mathjs';
+import PopUp from './PopUp'; // Certifique-se de que o caminho está correto
 
 const { height, width } = Dimensions.get('window');
+const math = create(all);
 
 const periodosMap = {
   'NPT': 'Primeiro Período',
@@ -11,20 +14,21 @@ const periodosMap = {
 
 const visaoGeralColors = ['#9AA8B3', '#87949D', '#9AA8B3'];
 
-export default function Notas({ periodos, materias, notas, componentes }) {
+export default function Notas({ periodos, materias, notas, componentes, calculos }) {
   const [expandedPeriodos, setExpandedPeriodos] = useState([]);
   const [expandedMaterias, setExpandedMaterias] = useState({});
   const [animations, setAnimations] = useState({});
   const [materiaAnimations, setMateriaAnimations] = useState({});
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [selectedMateria, setSelectedMateria] = useState(null);
 
   const togglePeriodo = (periodoId) => {
     const isExpanded = expandedPeriodos.includes(periodoId);
-  
+
     if (isExpanded) {
       setExpandedPeriodos(expandedPeriodos.filter(id => id !== periodoId));
       setExpandedMaterias({});
-  
-      // Resetar as animações das matérias
+
       const newMateriaAnimations = {};
       Object.keys(materias).forEach(materiaId => {
         newMateriaAnimations[materiaId] = new Animated.Value(0);
@@ -33,7 +37,7 @@ export default function Notas({ periodos, materias, notas, componentes }) {
     } else {
       setExpandedPeriodos([...expandedPeriodos, periodoId]);
     }
-  
+
     const animation = animations[periodoId];
     if (animation) {
       Animated.timing(animation, {
@@ -54,7 +58,6 @@ export default function Notas({ periodos, materias, notas, componentes }) {
       }).start();
     }
   };
-  
 
   const toggleMateria = (materiaId) => {
     const isExpanded = expandedMaterias[materiaId] || false;
@@ -85,21 +88,43 @@ export default function Notas({ periodos, materias, notas, componentes }) {
     }
   };
 
+  const evaluateExpression = (expression, valores) => {
+    Object.keys(valores).forEach(key => {
+      expression = expression.replace(new RegExp(`\\b${key}\\b`, 'g'), valores[key]);
+    });
+
+    try {
+      return math.evaluate(expression);
+    } catch (error) {
+      console.error("Erro ao avaliar a expressão:", error);
+      return valores.reduce((total, val) => total + val, 0); // Soma geral se houver erro
+    }
+  };
+
   const renderVisaoGeral = (materiaId, periodoId) => {
     const notasMateria = notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) || [];
-    const somaNotas = notasMateria.reduce((total, nota) => total + (nota.nota !== -1 ? nota.nota : 0), 0);
+    const valores = notasMateria.reduce((obj, nota) => {
+      const pequenoNome = componentes[nota.componente_materia_id]?.pequeno_nome || nota.componente_materia_id;
+      obj[pequenoNome] = nota.nota !== -1 ? nota.nota : 0;
+      return obj;
+    }, {});
+
+    const calculo = calculos[`${materiaId}_${periodoId}`]?.calculo || "";
+    const resultadoCalculo = evaluateExpression(calculo, valores);
+
     const totalLancado = notasMateria.reduce((total, nota) => total + (nota.nota !== -1 ? componentes[nota.componente_materia_id].maximo : 0), 0);
-    const mediaRelativa = totalLancado ? ((somaNotas / totalLancado) * 100).toFixed(1) : 'N/A';
+    const mediaRelativa = totalLancado ? ((resultadoCalculo / totalLancado) * 100).toFixed(1) : 'N/A';
 
     return (
       <View style={styles.componenteItem}>
         <Text style={styles.componenteText}>Visão Geral</Text>
-        {['Soma das Notas', 'Total Lançado', 'Média Relativa'].map((label, index) => (
+        {['Resultado', 'Total Lançado', 'Média Relativa'].map((label, index) => (
           <View key={index} style={[styles.notaWrapper, { backgroundColor: visaoGeralColors[index % visaoGeralColors.length] }]}>
             <View style={styles.notaContainer}>
               <Text style={styles.notaLabel}>{label}</Text>
               <Text style={styles.notaValue}>
-                {label === 'Soma das Notas' ? `${somaNotas.toFixed(1)} Pontos` :
+                {'\n'}
+                {label === 'Resultado' ? `${resultadoCalculo.toFixed(1)} Pontos` :
                  label === 'Total Lançado' ? `${totalLancado.toFixed(1)} Pontos` :
                  `${mediaRelativa} de 100`}
               </Text>
@@ -148,7 +173,7 @@ export default function Notas({ periodos, materias, notas, componentes }) {
 
   const renderMaterias = (periodoId) => {
     if (!expandedPeriodos.includes(periodoId)) return null;
-
+  
     return (
       <View style={styles.materiasContainer}>
         {Object.keys(materias).map((materiaId, index) => {
@@ -156,21 +181,52 @@ export default function Notas({ periodos, materias, notas, componentes }) {
             inputRange: [0, 1],
             outputRange: ['0deg', '180deg'],
           }) || '0deg';
-
+  
+          // Filtra os componentes da matéria específica no período atual
+          const componentesMateria = notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) || [];
+  
           return (
-            <View key={materiaId} style={[
+            <View
+              key={materiaId}
+              style={[
                 styles.materiaItem,
-                expandedMaterias[materiaId] ? styles.materiaItemExpanded : (index % 2 === 0 ? styles.materiaItemEven : styles.materiaItemOdd),
-                { marginBottom: -1 }
-              ]}>
+                expandedMaterias[materiaId]
+                  ? styles.materiaItemExpanded
+                  : index % 2 === 0
+                  ? styles.materiaItemEven
+                  : styles.materiaItemOdd,
+                { marginBottom: -1 },
+              ]}
+            >
               <View style={styles.materiaHeader}>
-                <Text style={[styles.materiaText, index % 2 === 0 ? styles.materiaTextEven : styles.materiaTextOdd]}>{materias[materiaId]}</Text>
+                <Text
+                  style={[
+                    styles.materiaText,
+                    index % 2 === 0 ? styles.materiaTextEven : styles.materiaTextOdd,
+                  ]}
+                >
+                  {materias[materiaId]}
+                </Text>
                 <View style={styles.materiaIcons}>
                   <TouchableOpacity onPress={() => toggleMateria(materiaId)}>
-                    <Animated.Image source={index % 2 === 0 ? require('./assets/seta_even.png') : require('./assets/seta_odd.png')} style={[styles.icon, { transform: [{ rotate }] }]} />
+                    <Animated.Image
+                      source={index % 2 === 0 ? require('./assets/seta_even.png') : require('./assets/seta_odd.png')}
+                      style={[styles.icon, { transform: [{ rotate }] }]}
+                    />
                   </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Image source={index % 2 === 0 ? require('./assets/ac_even.png') : require('./assets/ac_odd.png')} style={[styles.icon, styles.iconRight]} />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedMateria({
+                        calculo: calculos[`${materiaId}_${periodoId}`]?.calculo,
+                        componentes: componentesMateria,
+                      });
+                      setPopupVisible(true);
+                    }}
+                  >
+                    <Image
+                      source={index % 2 === 0 ? require('./assets/ac_even.png') : require('./assets/ac_odd.png')}
+                      style={[styles.icon, styles.iconRight]}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -181,7 +237,7 @@ export default function Notas({ periodos, materias, notas, componentes }) {
       </View>
     );
   };
-
+  
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={true}>
@@ -202,6 +258,13 @@ export default function Notas({ periodos, materias, notas, componentes }) {
           );
         })}
       </ScrollView>
+      {popupVisible && (
+        <PopUp
+          visible={popupVisible}
+          onClose={() => setPopupVisible(false)}
+          materia={selectedMateria}
+        />
+      )}
     </View>
   );
 }
@@ -327,20 +390,20 @@ const styles = StyleSheet.create({
     marginBottom: '2%',
   },
   notaContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    alignItems: 'center',
     width: '100%',
   },
   notaLabel: {
     fontSize: height * 0.022,
     fontFamily: 'IBMPlexMono_500Medium',
     color: '#0F1920',
-    textAlign: 'left',
+    textAlign: 'center',
   },
   notaValue: {
     fontSize: height * 0.022,
     fontFamily: 'IBMPlexMono_500Medium',
     color: '#0F1920',
-    textAlign: 'right',
+    textAlign: 'center',
   },
 });

@@ -213,7 +213,7 @@ def get_user_data():
         if not ano_escolar_id:
             return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
         
-        trimestres, materias = get_periodos_materias(ano_escolar_id)
+        trimestres, materias, calculos = get_periodos_materias(ano_escolar_id)
         debug_log(f"Trimestres obtidos: {trimestres}\n\n")
         debug_log(f"Matérias obtidas: {materias}\n\n")
         
@@ -237,6 +237,7 @@ def get_user_data():
             "notas": notas,
             "medias": medias,
             "componentes": componentes,
+            "calculos": calculos,
             "nome": nome  
         })
     except Exception as e:
