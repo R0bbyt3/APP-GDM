@@ -18,15 +18,15 @@ from selenium_utils import init_driver, perform_login, extract_grades
 import os
 
 app = Flask(__name__)
-app.secret_key = "abacaxi" # Crhave secreta
-csrf = CSRFProtect(app)  # Inicializa a proteção CSRF
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
+csrf = CSRFProtect(app)
 CORS(app)
 
 # Configuração do logger para incluir mensagens de debug
 logging.basicConfig(level=logging.INFO)
 
 # Variável para controle de debug
-DEBUG_MODE = True
+DEBUG_MODE = os.getenv('DEBUG_MODE', 'True') == 'True'
 
 def debug_log(message):
     """Função para logs de depuração detalhados"""
@@ -53,6 +53,8 @@ def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
+    if request.is_secure:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
 
 # Rota para fornecer o token CSRF

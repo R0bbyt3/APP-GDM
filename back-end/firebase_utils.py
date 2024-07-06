@@ -2,10 +2,16 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime 
 from utils import convert_to_float, strip_whitespace
+import os
 
 # Inicializar o Firebase
-cred = credentials.Certificate("firebase_credentials.json")
-firebase_admin.initialize_app(cred)
+firebase_cred = os.getenv('FIREBASE_CREDENTIALS_JSON')
+if firebase_cred:
+    cred = credentials.Certificate(firebase_cred)
+    firebase_admin.initialize_app(cred)
+else:
+    raise ValueError("Firebase credentials not found in environment variables")
+
 db = firestore.client()
 
 DEBUG = True  # Define se o modo de debug está ativo ou não

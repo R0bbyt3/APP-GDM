@@ -17,8 +17,7 @@ export default function App() {
   const [userData, setUserData] = useState(null);
   const [csrfToken, setCsrfToken] = useState('');
 
-  const serverIp = '192.168.1.9';
-  const serverPort = '5000';
+  const backendUrl = 'https://seu-app.herokuapp.com';
 
   const [fontsLoaded] = useFonts({
     'IBMPlexMono_400Regular': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_400Regular.ttf'),
@@ -29,7 +28,7 @@ export default function App() {
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const response = await axios.get(`http://${serverIp}:${serverPort}/csrf-token`, { withCredentials: true });
+        const response = await axios.get(`${backendUrl}/csrf-token`, { withCredentials: true });
         setCsrfToken(response.data.csrf_token);
       } catch (error) {
         DEBUG && console.error('Erro ao obter CSRF token:', error);
@@ -55,7 +54,7 @@ export default function App() {
   const handleLogin = async () => {
     try {
       DEBUG && console.log('Tentando fazer login com:', { login, senha });
-      const response = await axios.post(`http://${serverIp}:${serverPort}/login`, { login, senha }, {
+      const response = await axios.post(`${backendUrl}/login`, { login, senha }, {
         headers: {
           'X-CSRFToken': csrfToken
         },
@@ -63,7 +62,7 @@ export default function App() {
       });
       if (response.data.success) {
         DEBUG && console.log('Login bem-sucedido:', response.data);
-        const userDataResponse = await axios.post(`http://${serverIp}:${serverPort}/get_user_data`, { login }, {
+        const userDataResponse = await axios.post(`${backendUrl}/get_user_data`, { login }, {
           headers: {
             'X-CSRFToken': csrfToken
           },
@@ -90,7 +89,7 @@ export default function App() {
   const handleCreateAccount = async () => {
     try {
       DEBUG && console.log('Tentando criar conta com:', { login, senha });
-      const response = await axios.post(`http://${serverIp}:${serverPort}/create_account`, { login, senha }, {
+      const response = await axios.post(`${backendUrl}/create_account`, { login, senha }, {
         headers: {
           'X-CSRFToken': csrfToken
         },
@@ -109,7 +108,7 @@ export default function App() {
   const handleUpdateInfo = async () => {
     try {
       DEBUG && console.log('Tentando atualizar informações com:', { login, senha });
-      const response = await axios.post(`http://${serverIp}:${serverPort}/update_info`, { login, senha }, {
+      const response = await axios.post(`${backendUrl}/update_info`, { login, senha }, {
         headers: {
           'X-CSRFToken': csrfToken
         },
@@ -117,7 +116,7 @@ export default function App() {
       });
       Alert.alert('Info', response.data.message);
       if (response.data.success) {
-        const userDataResponse = await axios.post(`http://${serverIp}:${serverPort}/get_user_data`, { login }, {
+        const userDataResponse = await axios.post(`${backendUrl}/get_user_data`, { login }, {
           headers: {
             'X-CSRFToken': csrfToken
           },
@@ -137,7 +136,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       DEBUG && console.log('Tentando fazer logout');
-      const response = await axios.post(`http://${serverIp}:${serverPort}/logout`, {}, {
+      const response = await axios.post(`${backendUrl}/logout`, {}, {
         headers: {
           'X-CSRFToken': csrfToken
         },

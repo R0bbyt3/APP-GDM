@@ -1,7 +1,32 @@
 import React from 'react';
-import { View, Text, Modal, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Modal, StyleSheet, Dimensions, TouchableOpacity, Image } from 'react-native';
 
 const { height, width } = Dimensions.get('window');
+
+const splitCalculo = (calculo) => {
+  if (!calculo) return null; // Adiciona verificação para evitar erro
+
+  const tokens = calculo.split(/([+\*/])/).filter(Boolean);
+  const result = [];
+
+  tokens.forEach((item, index) => {
+    if (item.includes('(') || item.includes(')')) {
+      result.push(
+        <Text key={`${index}-paren`} style={styles.calculoText}>
+          {item.trim()}
+        </Text>
+      );
+    } else {
+      result.push(
+        <Text key={index} style={styles.calculoText}>
+          {item.trim()}
+        </Text>
+      );
+    }
+  });
+
+  return result;
+};
 
 const PopUp = ({ visible, onClose, materia }) => {
   if (!materia) return null;
@@ -9,21 +34,20 @@ const PopUp = ({ visible, onClose, materia }) => {
   return (
     <Modal
       transparent={true}
-      animationType="slide"
+      animationType="none"
       visible={visible}
       onRequestClose={onClose}
     >
       <View style={styles.modalBackground}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Cálculo: {materia.calculo}</Text>
-          <View style={styles.componentList}>
-            {materia.componentes.map((componente, index) => (
-              <View key={index} style={styles.componenteItem}>
-                <Text style={styles.componenteText}>{componente.pequeno_nome}: {componente.nota}</Text>
-              </View>
-            ))}
+          <TouchableOpacity style={styles.closeButtonContainer} onPress={onClose}>
+            <Image source={require('./assets/x.png')} style={styles.closeButton} />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Cálculo</Text>
+          <Text style={styles.materiaNome}>{materia.nome}</Text>
+          <View style={styles.calculoContainer}>
+            {splitCalculo(materia.calculo)}
           </View>
-          <Text style={styles.closeButton} onPress={onClose}>Fechar</Text>
         </View>
       </View>
     </Modal>
@@ -39,30 +63,36 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: width * 0.8,
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
+    padding: width * 0.05,
+    backgroundColor: '#A8B4C2',
+    borderRadius: width * 0.05,
     alignItems: 'center',
+  },
+  closeButtonContainer: {
+    position: 'absolute',
+    top: height * 0.02,
+    right: height * 0.02,
+  },
+  closeButton: {
+    width: width * 0.08,
+    height: width * 0.08,
   },
   modalTitle: {
     fontSize: height * 0.03,
-    marginBottom: 10,
+    marginBottom: height * 0.02,
+    fontFamily: 'IBMPlexMono_500Medium',
   },
-  componentList: {
-    width: '100%',
+  materiaNome: {
+    fontSize: height * 0.025,
+    marginBottom: height * 0.02,
+    fontFamily: 'IBMPlexMono_500Medium',
   },
-  componenteItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 5,
+  calculoContainer: {
+    alignItems: 'center',
   },
-  componenteText: {
-    fontSize: height * 0.02,
-  },
-  closeButton: {
-    marginTop: 20,
-    fontSize: height * 0.02,
-    color: 'blue',
+  calculoText: {
+    fontSize: height * 0.025,
+    fontFamily: 'IBMPlexMono_500Medium',
   },
 });
 

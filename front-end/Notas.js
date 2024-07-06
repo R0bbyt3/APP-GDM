@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { create, all } from 'mathjs';
-import PopUp from './PopUp'; // Certifique-se de que o caminho está correto
+import PopUp from './PopUp';
 
 const { height, width } = Dimensions.get('window');
 const math = create(all);
@@ -20,7 +20,7 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
   const [animations, setAnimations] = useState({});
   const [materiaAnimations, setMateriaAnimations] = useState({});
   const [popupVisible, setPopupVisible] = useState(false);
-  const [selectedMateria, setSelectedMateria] = useState(null);
+  const [selectedMateria, setSelectedMateria] = useState({});
 
   const togglePeriodo = (periodoId) => {
     const isExpanded = expandedPeriodos.includes(periodoId);
@@ -59,15 +59,16 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
     }
   };
 
-  const toggleMateria = (materiaId) => {
-    const isExpanded = expandedMaterias[materiaId] || false;
+  const toggleMateria = (materiaId, periodoId) => {
+    const key = `${materiaId}_${periodoId}`;
+    const isExpanded = expandedMaterias[key] || false;
 
     setExpandedMaterias({
       ...expandedMaterias,
-      [materiaId]: !isExpanded
+      [key]: !isExpanded
     });
 
-    const animation = materiaAnimations[materiaId];
+    const animation = materiaAnimations[key];
     if (animation) {
       Animated.timing(animation, {
         toValue: isExpanded ? 0 : 1,
@@ -78,7 +79,7 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
       const newAnimation = new Animated.Value(isExpanded ? 1 : 0);
       setMateriaAnimations({
         ...materiaAnimations,
-        [materiaId]: newAnimation,
+        [key]: newAnimation,
       });
       Animated.timing(newAnimation, {
         toValue: isExpanded ? 0 : 1,
@@ -97,7 +98,7 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
       return math.evaluate(expression);
     } catch (error) {
       console.error("Erro ao avaliar a expressão:", error);
-      return valores.reduce((total, val) => total + val, 0); // Soma geral se houver erro
+      return null;  // Retorna null se houver um erro
     }
   };
 
@@ -109,8 +110,14 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
       return obj;
     }, {});
 
-    const calculo = calculos[`${materiaId}_${periodoId}`]?.calculo || "";
-    const resultadoCalculo = evaluateExpression(calculo, valores);
+    const calculoId = `${materiaId}_${periodoId}`;
+    const calculo = calculos[calculoId]?.calculo || '0';
+    let resultadoCalculo = evaluateExpression(calculo, valores);
+
+    // Se resultadoCalculo for null (erro na expressão), realiza uma soma geral
+    if (resultadoCalculo === null) {
+      resultadoCalculo = notasMateria.reduce((total, nota) => total + (nota.nota !== -1 ? nota.nota : 0), 0);
+    }
 
     const totalLancado = notasMateria.reduce((total, nota) => total + (nota.nota !== -1 ? componentes[nota.componente_materia_id].maximo : 0), 0);
     const mediaRelativa = totalLancado ? ((resultadoCalculo / totalLancado) * 100).toFixed(1) : 'N/A';
@@ -118,13 +125,13 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
     return (
       <View style={styles.componenteItem}>
         <Text style={styles.componenteText}>Visão Geral</Text>
-        {['Resultado', 'Total Lançado', 'Média Relativa'].map((label, index) => (
+        {['Soma das Notas', 'Total Lançado', 'Média Relativa'].map((label, index) => (
           <View key={index} style={[styles.notaWrapper, { backgroundColor: visaoGeralColors[index % visaoGeralColors.length] }]}>
             <View style={styles.notaContainer}>
               <Text style={styles.notaLabel}>{label}</Text>
               <Text style={styles.notaValue}>
                 {'\n'}
-                {label === 'Resultado' ? `${resultadoCalculo.toFixed(1)} Pontos` :
+                {label === 'Soma das Notas' ? `${resultadoCalculo.toFixed(1)} Pontos` :
                  label === 'Total Lançado' ? `${totalLancado.toFixed(1)} Pontos` :
                  `${mediaRelativa} de 100`}
               </Text>
@@ -136,7 +143,8 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
   };
 
   const renderComponentes = (materiaId, periodoId) => {
-    if (!expandedMaterias[materiaId]) return null;
+    const key = `${materiaId}_${periodoId}`;
+    if (!expandedMaterias[key]) return null;
 
     const componentesMateria = notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) || [];
 
@@ -173,60 +181,33 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
 
   const renderMaterias = (periodoId) => {
     if (!expandedPeriodos.includes(periodoId)) return null;
-  
+
     return (
       <View style={styles.materiasContainer}>
         {Object.keys(materias).map((materiaId, index) => {
-          const rotate = materiaAnimations[materiaId]?.interpolate({
+          const key = `${materiaId}_${periodoId}`;
+          const rotate = materiaAnimations[key]?.interpolate({
             inputRange: [0, 1],
             outputRange: ['0deg', '180deg'],
           }) || '0deg';
-  
-          // Filtra os componentes da matéria específica no período atual
-          const componentesMateria = notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) || [];
-  
+
           return (
-            <View
-              key={materiaId}
-              style={[
+            <View key={key} style={[
                 styles.materiaItem,
-                expandedMaterias[materiaId]
-                  ? styles.materiaItemExpanded
-                  : index % 2 === 0
-                  ? styles.materiaItemEven
-                  : styles.materiaItemOdd,
-                { marginBottom: -1 },
-              ]}
-            >
+                expandedMaterias[key] ? styles.materiaItemExpanded : (index % 2 === 0 ? styles.materiaItemEven : styles.materiaItemOdd),
+                { marginBottom: -1 }
+              ]}>
               <View style={styles.materiaHeader}>
-                <Text
-                  style={[
-                    styles.materiaText,
-                    index % 2 === 0 ? styles.materiaTextEven : styles.materiaTextOdd,
-                  ]}
-                >
-                  {materias[materiaId]}
-                </Text>
+                <Text style={[styles.materiaText, index % 2 === 0 ? styles.materiaTextEven : styles.materiaTextOdd]}>{materias[materiaId]}</Text>
                 <View style={styles.materiaIcons}>
-                  <TouchableOpacity onPress={() => toggleMateria(materiaId)}>
-                    <Animated.Image
-                      source={index % 2 === 0 ? require('./assets/seta_even.png') : require('./assets/seta_odd.png')}
-                      style={[styles.icon, { transform: [{ rotate }] }]}
-                    />
+                  <TouchableOpacity onPress={() => toggleMateria(materiaId, periodoId)}>
+                    <Animated.Image source={index % 2 === 0 ? require('./assets/seta_even.png') : require('./assets/seta_odd.png')} style={[styles.icon, { transform: [{ rotate }] }]} />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedMateria({
-                        calculo: calculos[`${materiaId}_${periodoId}`]?.calculo,
-                        componentes: componentesMateria,
-                      });
-                      setPopupVisible(true);
-                    }}
-                  >
-                    <Image
-                      source={index % 2 === 0 ? require('./assets/ac_even.png') : require('./assets/ac_odd.png')}
-                      style={[styles.icon, styles.iconRight]}
-                    />
+                  <TouchableOpacity onPress={() => {
+                    setSelectedMateria({ nome: materias[materiaId], calculo: calculos[`${materiaId}_${periodoId}`]?.calculo, componentes: notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) });
+                    setPopupVisible(true);
+                  }}>
+                    <Image source={index % 2 === 0 ? require('./assets/ac_even.png') : require('./assets/ac_odd.png')} style={[styles.icon, styles.iconRight]} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -237,7 +218,7 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
       </View>
     );
   };
-  
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={true}>
@@ -258,13 +239,7 @@ export default function Notas({ periodos, materias, notas, componentes, calculos
           );
         })}
       </ScrollView>
-      {popupVisible && (
-        <PopUp
-          visible={popupVisible}
-          onClose={() => setPopupVisible(false)}
-          materia={selectedMateria}
-        />
-      )}
+      <PopUp visible={popupVisible} onClose={() => setPopupVisible(false)} materia={selectedMateria} />
     </View>
   );
 }
