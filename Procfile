@@ -1,1 +1,1 @@
-web: cd back-end && gunicorn app:app
+web: python back-end/app.py
