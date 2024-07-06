@@ -41,6 +41,12 @@
 
 -Tem coisas sem casos de erro! (back end)
 
+-Trimestre e kinda que inutil
+
+-CHECA EDUCAÇAO FISICA, TA SOMANDO ERRADO, TRATAR CASOS!
+
+-Trancar possibilidade de apertar botao ? das materias q nn existem no periodo ainda! (ou tirar elas de la nn sei)
+
 JÁ RESOLVIDOS:
 
 -Setas da interface nao desviram qnd vc fecha // colocar clique no bgl inteiro
