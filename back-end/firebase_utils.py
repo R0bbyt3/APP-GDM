@@ -140,7 +140,7 @@ def get_ano_escola_id_usuario(login):
     data = strip_whitespace(data, ['login'])
     login = data['login']
     
-    debug_log(f"Obtendo ano_escola_id para o usuário {login}")
+    debug_log(f"Obtendo ano_escola_id para o usuário {login}\n\n")
     try:
         user_ref = db.collection('Usuario').document(login)
         user_doc = user_ref.get()
@@ -148,7 +148,7 @@ def get_ano_escola_id_usuario(login):
             user_data = user_doc.to_dict()
             ano_escola_id = user_data['ano_escola_id']
             nome = user_data.get('nome', 'Usuário')
-            debug_log(f"ano_escola_id para o usuário {login}: {ano_escola_id}, nome: {nome}")
+            debug_log(f"ano_escola_id para o usuário {login}: {ano_escola_id}, nome: {nome}\n\n")
             return ano_escola_id, nome
         else:
             debug_log(f"Usuário {login} não encontrado.")
@@ -168,15 +168,15 @@ def get_periodos_materias(ano_escola_id):
     Returns:
         tuple: Dicionário de trimestres e dicionário de matérias.
     """
-    debug_log(f"Obtendo períodos e matérias para ano_escola_id {ano_escola_id}")
+    debug_log(f"Obtendo períodos e matérias para ano_escola_id {ano_escola_id}\n\n")
     try:
         trimestres_ref = db.collection('Trimestre').stream()
         trimestres = {doc.id: doc.to_dict()['descricao'] for doc in trimestres_ref}
-        debug_log(f"Trimestres obtidos: {trimestres}")
+        debug_log(f"Trimestres obtidos: {trimestres}\n\n")
 
         materias_ref = db.collection('Materia').where('ano_escola_id', '==', ano_escola_id).stream()
         materias = {doc.id: doc.to_dict()['nome'] for doc in materias_ref}
-        debug_log(f"Matérias obtidas: {materias}")
+        debug_log(f"Matérias obtidas: {materias}\n\n")
 
         return trimestres, materias
     except Exception as e:
@@ -193,11 +193,11 @@ def get_componentes_materia(materia_id):
     Returns:
         dict: Dicionário de componentes da matéria.
     """
-    debug_log(f"Obtendo componentes da matéria {materia_id}")
+    debug_log(f"Obtendo componentes da matéria {materia_id}\n\n")
     try:
         componentes_ref = db.collection('Componente_Materia').where('materia_id', '==', materia_id).stream()
         componentes = {doc.id: doc.to_dict() for doc in componentes_ref}
-        debug_log(f"Componentes obtidos: {componentes}")
+        debug_log(f"Componentes obtidos: {componentes}\n\n")
         return componentes
     except Exception as e:
         debug_log(f"Erro ao obter componentes da matéria {materia_id}: {e}")
@@ -217,7 +217,7 @@ def get_medias_aluno(usuario_id):
     data = strip_whitespace(data, ['usuario_id'])
     usuario_id = data['usuario_id']
 
-    debug_log(f"Obtendo médias para o usuário {usuario_id}")
+    debug_log(f"Obtendo médias para o usuário {usuario_id}\n\n")
     try:
         medias_ref = db.collection('Media_Atual').where('usuario_id', '==', usuario_id).stream()
         medias = {}
@@ -228,7 +228,7 @@ def get_medias_aluno(usuario_id):
             if periodo not in medias:
                 medias[periodo] = {}
             medias[periodo][materia] = media_data
-        debug_log(f"Médias obtidas: {medias}")
+        debug_log(f"Médias obtidas: {medias}\n\n")
         return medias
     except Exception as e:
         debug_log(f"Erro ao obter médias do aluno {usuario_id}: {e}")
@@ -248,7 +248,7 @@ def get_notas_aluno(usuario_id):
     data = strip_whitespace(data, ['usuario_id'])
     usuario_id = data['usuario_id']
 
-    debug_log(f"Obtendo notas para o usuário {usuario_id}")
+    debug_log(f"Obtendo notas para o usuário {usuario_id}\n\n")
     try:
         notas_ref = db.collection('Nota').where('usuario_id', '==', usuario_id).stream()
         notas = {}
@@ -258,7 +258,7 @@ def get_notas_aluno(usuario_id):
             if periodo not in notas:
                 notas[periodo] = []
             notas[periodo].append(nota_data)
-        debug_log(f"Notas obtidas: {notas}")
+        debug_log(f"Notas obtidas: {notas}\n\n")
         return notas
     except Exception as e:
         debug_log(f"Erro ao obter notas do aluno {usuario_id}: {e}")

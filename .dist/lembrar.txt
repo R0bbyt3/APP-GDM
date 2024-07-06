@@ -1,1 +1,47 @@
 -Testar entradas e verificação do backend sobre as informaçoes validas que entram no firebase
+
+(e fazer testes automatizados gerais!)
+
+-Esconder variveis do firebase e secret key dentro de variaveis de ambiente! (chave constante)
+
+-Onde caralhos ta as files do firebase? nao era pra ser no back end?
+
+-A autenticação ta funcionando????? 
+
+-fazer com que ele elimine os espaços de erro
+
+-Tirar os retornos de log e definir os casos de erro e informar melhor isso ao usuario (sem log de console aparecendo na tela, simplesmente cobrir todos os erros possiveis)
+
+-Ele demora mt pra ver se a conta ja existe, faz umas verificaçoes q deveria fazer so se ela nn existir!! melhore isso (acho q resolveu)
+ 
+-Ver se ta tudo comentado certo e verificar a utilização de tudo e como as coisas se conectam
+
+-O banco de dados tem a logica de periodo mas nn sei se precisa! // a mika disse q e sempre trimetre
+
+-Tem algum outro erro na atualização se tiver espaços no bgl, da uma olhada nisso, tenta unificar pq esse codigo ta em td lugar e nn deve precisar!!!
+
+-Atualização de informação  NAO ESTA ATUALIZANDO INFORMAÇAO!!!
+
+
+//npx expo install expo-font @expo-google-fonts/ibm-plex-mono
+
+-nao tenho certeza mas ta parecendo q se eu erro o login uma primeira vez ele nn me deixa mais logar se eu nn reiniciar talvez seja o lance da chave (?)
+
+-Existem cassos onde uma materia nao foi lançada no boletim parcial
+
+-Gerenciar a FORMATAÇAO dos titulos etc (so por questão de visual mesmo)
+
+-Teclado fica em caps lock na senha no cel (so aconteceu uma vez, acho q ta tudo ok)
+
+-Testar proporçoes tipo em alguns celulares ver se ta tudo ok mesmo (Não ta na maioria dos casos)
+
+-Colocar uma opçao de mudar a paleta de cor do app talvez... Definir 5 cores principais ig...
+
+-Tratar calculo das notas (nem todas são só soma)
+
+-Tem coisas sem casos de erro! (back end)
+
+JÁ RESOLVIDOS:
+
+-Setas da interface nao desviram qnd vc fecha // colocar clique no bgl inteiro
+

@@ -1,3 +1,5 @@
+import re
+
 def convert_to_float(value):
     """
     Converte um valor para float, substituindo vírgulas por pontos.
@@ -28,3 +30,22 @@ def strip_whitespace(data, keys):
         if key in data:
             data[key] = data[key].strip()
     return data
+
+
+def capitalize_component_name(value):
+    """
+    Capitaliza a primeira letra de cada palavra em uma string, deixando as outras letras em minúsculo.
+    
+    Args:
+        value (str): A string a ser capitalizada.
+    
+    Returns:
+        str: A string com a primeira letra de cada palavra capitalizada.
+    """
+    if not isinstance(value, str):
+        return value
+    
+    # Dividir a string em palavras e capitalizar cada uma
+    words = re.findall(r'\b\w+\b', value)
+    capitalized_words = [word.capitalize() for word in words]
+    return ' '.join(capitalized_words)

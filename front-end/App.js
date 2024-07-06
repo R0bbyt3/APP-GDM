@@ -1,23 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Button, Alert } from 'react-native';
+import { StyleSheet, View, TextInput, Button, Alert, Dimensions } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
 import axios from 'axios';
 import LoginScreen from './LoginScreen';
 import Dashboard from './Dashboard';
 
-const DEBUG = process.env.DEBUG === 'true'; // Variável para habilitar/desabilitar debug
+const DEBUG = process.env.DEBUG === 'true';
+
+const { height, width } = Dimensions.get('window');
 
 export default function App() {
-  const [screen, setScreen] = useState('login'); // Estado para controlar a tela atual
-  const [login, setLogin] = useState(''); // Estado para armazenar o login
-  const [senha, setSenha] = useState(''); // Estado para armazenar a senha
-  const [userData, setUserData] = useState(null); // Estado para armazenar os dados do usuário
-  const [csrfToken, setCsrfToken] = useState(''); // Estado para armazenar o token CSRF
+  const [screen, setScreen] = useState('login');
+  const [login, setLogin] = useState('');
+  const [senha, setSenha] = useState('');
+  const [userData, setUserData] = useState(null);
+  const [csrfToken, setCsrfToken] = useState('');
 
-  const serverIp = '192.168.1.9'; // IP do servidor
-  const serverPort = '5000'; // Porta do servidor
+  const serverIp = '192.168.1.9';
+  const serverPort = '5000';
+
+  const [fontsLoaded] = useFonts({
+    'IBMPlexMono_400Regular': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_400Regular.ttf'),
+    'IBMPlexMono_500Medium': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_500Medium.ttf'),
+    'IBMPlexMono_600SemiBold': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_600SemiBold.ttf'),
+  });
 
   useEffect(() => {
-    // Obtém o token CSRF quando o componente é montado
     const fetchCsrfToken = async () => {
       try {
         const response = await axios.get(`http://${serverIp}:${serverPort}/csrf-token`, { withCredentials: true });
@@ -30,9 +39,19 @@ export default function App() {
     fetchCsrfToken();
   }, []);
 
-  /**
-   * Função para lidar com o login
-   */
+  useEffect(() => {
+    async function hideSplashScreen() {
+      if (fontsLoaded) {
+        await SplashScreen.hideAsync();
+      }
+    }
+    hideSplashScreen();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   const handleLogin = async () => {
     try {
       DEBUG && console.log('Tentando fazer login com:', { login, senha });
@@ -68,9 +87,6 @@ export default function App() {
     }
   };
 
-  /**
-   * Função para lidar com a criação de conta
-   */
   const handleCreateAccount = async () => {
     try {
       DEBUG && console.log('Tentando criar conta com:', { login, senha });
@@ -90,9 +106,6 @@ export default function App() {
     }
   };
 
-  /**
-   * Função para lidar com a atualização de informações
-   */
   const handleUpdateInfo = async () => {
     try {
       DEBUG && console.log('Tentando atualizar informações com:', { login, senha });
@@ -121,7 +134,29 @@ export default function App() {
     }
   };
 
-  // Renderiza a tela de login ou criação de conta
+  const handleLogout = async () => {
+    try {
+      DEBUG && console.log('Tentando fazer logout');
+      const response = await axios.post(`http://${serverIp}:${serverPort}/logout`, {}, {
+        headers: {
+          'X-CSRFToken': csrfToken
+        },
+        withCredentials: true
+      });
+      if (response.data.success) {
+        setScreen('login');
+        setUserData(null);
+        DEBUG && console.log('Logout bem-sucedido');
+      } else {
+        DEBUG && console.error('Erro ao fazer logout:', response.data.message);
+        Alert.alert('Erro', `Erro ao fazer logout: ${response.data.message}`);
+      }
+    } catch (error) {
+      DEBUG && console.error('Erro ao fazer logout:', error);
+      Alert.alert('Erro', 'Erro ao fazer logout. Verifique sua conexão e tente novamente.');
+    }
+  };
+
   if (screen === 'login' || screen === 'createAccount') {
     return (
       <LoginScreen
@@ -137,7 +172,6 @@ export default function App() {
     );
   }
 
-  // Renderiza a tela do dashboard
   if (screen === 'dashboard') {
     return (
       <Dashboard
@@ -145,11 +179,11 @@ export default function App() {
         userData={userData}
         setScreen={setScreen}
         handleUpdateInfo={handleUpdateInfo}
+        handleLogout={handleLogout}
       />
     );
   }
 
-  // Renderiza nada se a tela não for reconhecida
   return null;
 }
 
@@ -159,13 +193,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: width * 0.05,
   },
   input: {
-    height: 40,
-    width: 300,
-    margin: 12,
+    height: height * 0.05,
+    width: width * 0.8,
+    margin: height * 0.015,
     borderWidth: 1,
-    padding: 10,
+    padding: width * 0.025,
   },
 });

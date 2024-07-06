@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import logging
 from firebase_utils import save_to_firestore
-from utils import convert_to_float
+from utils import convert_to_float, capitalize_component_name
 
 DEBUG = True  # Define se o modo de debug está ativo ou não
 
@@ -142,18 +142,6 @@ def extract_grades(driver, login, ano_escolar_id):
     return data
 
 def extract_subject_data(driver, login, ano_escolar_id, boletim):
-    """
-    Extrai os dados das matérias de um boletim específico.
-
-    Args:
-        driver (webdriver): Instância do WebDriver.
-        login (str): Nome de usuário.
-        ano_escolar_id (str): ID do ano escolar.
-        boletim (str): Nome do boletim.
-
-    Returns:
-        list: Dados das matérias extraídas.
-    """
     debug_log(f"Extraindo dados das matérias do boletim: {boletim}")
     materias = driver.find_elements(By.CSS_SELECTOR, 'table.Tab1Grade[id="NOTA"]')
     boletim_data = []
@@ -179,7 +167,7 @@ def extract_subject_data(driver, login, ano_escolar_id, boletim):
 
         for comp, nota in zip(componentes, notas):
             componente_info = comp.get_attribute("title").split('\n')
-            titulo = componente_info[0]
+            titulo = capitalize_component_name(componente_info[0])  # Padronizando nome do componente
             peso = convert_to_float(componente_info[1].split(':')[1])
             maximo = convert_to_float(componente_info[2].split(':')[1])
             componente_id = comp.text.strip()
@@ -194,7 +182,7 @@ def extract_subject_data(driver, login, ano_escolar_id, boletim):
                 'nota': nota_valor
             }
 
-            save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, boletim)  # Passar o período como boletim
+            save_to_firestore(login, materia_nome, boletim, titulo, peso, maximo, nota_valor, media_atual, ano_escolar_id, boletim)
             materia_data["componentes"].append(componente_data)
         
         boletim_data.append(materia_data)

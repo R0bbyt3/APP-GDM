@@ -22,6 +22,18 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": {
+            "Inter_900Black": "./node_modules/@expo-google-fonts/inter/Inter_900Black.ttf",
+            "IBMPlexMono_400Regular": "./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_400Regular.ttf",
+            "IBMPlexMono_600SemiBold": "./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_600SemiBold.ttf"
+          }
+        }
+      ]
+    ]
   }
 }

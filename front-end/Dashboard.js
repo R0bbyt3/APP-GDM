@@ -1,161 +1,166 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Button, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { useFonts } from 'expo-font';
+import AppLoading from 'expo-app-loading';
+import Notas from './Notas';
+import Info from './Info';
 
-const DEBUG = process.env.DEBUG === 'true'; // Variável para habilitar/desabilitar debug
+const { height, width } = Dimensions.get('window');
 
-export default function Dashboard({ login, userData, setScreen, handleUpdateInfo }) {
-  // Estados para armazenar períodos, matérias, notas e médias
-  const [periodos, setPeriodos] = useState(userData.trimestres || {});
-  const [materias, setMaterias] = useState(userData.materias || {});
-  const [notas, setNotas] = useState(userData.notas || {});
-  const [medias, setMedias] = useState(userData.medias || {});
-  const [nome, setNome] = useState(userData.nome || 'Usuário');
+export default function Dashboard({ userData, handleLogout }) {
+  const [selectedScreen, setSelectedScreen] = useState('home');
+  const [fontsLoaded] = useFonts({
+    'IBMPlexMono_400Regular': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_400Regular.ttf'),
+    'IBMPlexMono_500Medium': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_500Medium.ttf'),
+    'IBMPlexMono_600SemiBold': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_600SemiBold.ttf'),
+  });
 
-  // Hook para atualizar os estados quando os dados do usuário mudam
-  useEffect(() => {
-    if (userData) {
-      DEBUG && console.log('UserData received:', userData);
-      setPeriodos(userData.trimestres);
-      setMaterias(userData.materias);
-      setNotas(userData.notas);
-      setMedias(userData.medias);
-      setNome(userData.nome);
-    }
-  }, [userData]);
+  if (!fontsLoaded) {
+    return <AppLoading />;
+  }
 
-  // Função para obter o nome do período baseado no ID
-  const getPeriodoNome = (id) => {
-    switch (id) {
-      case 'NPT': return 'Primeiro período';
-      case 'NST': return 'Segundo período';
-      case 'NTT': return 'Terceiro período';
-      default: return id;
-    }
-  };
-
-  // Função para renderizar os componentes de uma matéria
-  const renderComponentesMateria = (materiaId, periodoId) => {
-    const componentesMateria = notas[periodoId]?.filter(nota => nota.componente_materia_id.includes(materiaId)) || [];
-    if (componentesMateria.length === 0) return null;
-
-    DEBUG && console.log(`Componentes for ${materiaId} in ${periodoId}:`, componentesMateria);
-    return componentesMateria.map((compData, index) => {
-      const titulo = compData.componente_materia_id.split('_').slice(2).join('_'); // Remove a parte do ID da matéria
-      return (
-        <View key={index} style={styles.componenteContainer}>
-          <Text style={styles.componenteText}>Título: {titulo}</Text>
-          <Text style={styles.componenteText}>
-            Nota: {compData.nota === -1 ? 'Não saiu ainda' : compData.nota}
-          </Text>
-        </View>
-      );
-    });
-  };
-
-  // Função para renderizar a média de uma matéria
-  const renderMediaMateria = (materiaId, periodoId) => {
-    const media = medias[periodoId]?.[materiaId]?.media || 'Não disponível';
-    DEBUG && console.log(`Render media for ${materiaId} in ${periodoId}: ${media}`);
-    return (
-      <View style={styles.mediaContainer}>
-        <Text style={styles.mediaText}>Média: {media}</Text>
-      </View>
-    );
-  };
-
-  // Função para renderizar os dados
-  const renderData = () => {
-    if (!Object.keys(periodos).length || !Object.keys(materias).length) return null;
-
-    return (
-      <View>
-        {Object.entries(periodos).map(([periodoId, descricao]) => (
-          <View key={periodoId} style={styles.periodoContainer}>
-            <Text style={styles.periodoTitle}>{getPeriodoNome(periodoId)}</Text>
-            {Object.entries(materias).map(([materiaId, nome]) => (
-              <View key={materiaId} style={styles.materiaContainer}>
-                <Text style={styles.materiaText}>{nome}</Text>
-                {renderComponentesMateria(materiaId, periodoId)}
-                {renderMediaMateria(materiaId, periodoId)}
-              </View>
-            ))}
+  const renderContent = () => {
+    switch (selectedScreen) {
+      case 'notas':
+        return <Notas periodos={userData.trimestres} materias={userData.materias} notas={userData.notas} medias={userData.medias} componentes={userData.componentes} />;
+      case 'info':
+        return <Info />;
+      default:
+        return (
+          <View style={styles.homeContainer}>
+            <Text style={styles.homeText}>Selecione uma opção abaixo</Text>
           </View>
-        ))}
-      </View>
-    );
+        );
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Bem-vindo</Text>
-      <Text style={styles.title}>{nome}</Text>
-      <Button title="Atualizar Informações" onPress={handleUpdateInfo} />
-      <ScrollView style={styles.scrollView}>
-        {renderData()}
-      </ScrollView>
-      <Button title="Sair" onPress={() => setScreen('login')} />
+      <View style={styles.topOverlay}>
+        <View style={styles.topBar}>
+          <View>
+            <Text style={styles.welcomeText}>Bem-Vindo(a),</Text>
+            <Text style={styles.userName}>{userData.nome}</Text>
+          </View>
+          <View style={styles.topBarIcons}>
+            <TouchableOpacity>
+              <Image source={require('./assets/config.png')} style={styles.icon} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+              <Image source={require('./assets/sair.png')} style={styles.icon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.content}>
+        {renderContent()}
+      </View>
+
+      <View style={styles.bottomOverlay}>
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.bottomBarItem} onPress={() => setSelectedScreen('info')}>
+            <Image source={require('./assets/info.png')} style={styles.bottomIcon} />
+            <Text style={styles.bottomBarText}>/INFO+/</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.bottomBarItem} onPress={() => setSelectedScreen('notas')}>
+            <Image source={require('./assets/notas.png')} style={styles.bottomIcon} />
+            <Text style={styles.bottomBarText}>/NOTAS/</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.bottomBarItem} onPress={() => setSelectedScreen('algo')}>
+            <Image source={require('./assets/notas.png')} style={styles.bottomIcon} />
+            <Text style={styles.bottomBarText}>/ALGO/</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
 
-// Estilos para os componentes
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: '#162025',
   },
-  scrollView: {
-    marginVertical: 20,
+  topOverlay: {
+    position: 'absolute',
+    top: 0,
     width: '100%',
+    height: height * 0.15, // 15% da altura da tela
+    backgroundColor: '#0F1920',
+    justifyContent: 'flex-end',
   },
-  periodoContainer: {
-    marginBottom: 20,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    padding: 10,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: width * 0.05, // 5% da largura da tela
+    paddingBottom: height * 0.015, // 1.5% da altura da tela
   },
-  periodoTitle: {
-    fontSize: 18,
+  welcomeText: {
+    color: '#CDE4DE',
+    fontSize: height * 0.0225, // 2.25% da altura da tela
+    fontFamily: 'IBMPlexMono_400Regular',
+  },
+  userName: {
+    color: '#A8B4C2',
+    fontSize: height * 0.025, // 2.5% da altura da tela
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
+    fontFamily: 'IBMPlexMono_600SemiBold',
   },
-  materiaContainer: {
-    marginBottom: 10,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+  topBarIcons: {
+    flexDirection: 'row',
   },
-  materiaText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#666',
+  icon: {
+    width: width * 0.1, // 10% da largura da tela
+    height: width * 0.1, // 10% da largura da tela
+    marginLeft: width * 0.04, // 4% da largura da tela
   },
-  componenteContainer: {
-    marginBottom: 5,
-    marginLeft: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: '#ddd',
-    paddingLeft: 10,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: height * 0.05, // 15% da altura da tela
   },
-  componenteText: {
-    fontSize: 14,
-    color: '#333',
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: height * 0.12, // 12% da altura da tela
+    backgroundColor: '#0F1920',
+    justifyContent: 'center',
   },
-  mediaContainer: {
-    marginTop: 10,
-    paddingLeft: 10,
+  bottomBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: width * 0.05, // 5% da largura da tela
   },
-  mediaText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+  bottomBarItem: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '30%', // 30% da largura da tela
+  },
+  bottomIcon: {
+    width: width * 0.1, // 10% da largura da tela
+    height: width * 0.1, // 10% da largura da tela
+    marginBottom: height * 0.01, // 1% da altura da tela
+  },
+  bottomBarText: {
+    color: '#CDE4DE',
+    fontSize: height * 0.02, // 2% da altura da tela
+    textAlign: 'center',
+    fontFamily: 'IBMPlexMono_600SemiBold',
+  },
+  homeContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  homeText: {
+    color: '#CDE4DE',
+    fontSize: height * 0.025, // 2.5% da altura da tela
+    fontFamily: 'IBMPlexMono_400Regular',
   },
 });

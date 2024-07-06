@@ -196,7 +196,6 @@ def update_info():
 
     return jsonify({"success": success, "message": message, "data": data})
 
-# Rota para obter dados completos do usuário
 @app.route('/get_user_data', methods=['POST'])
 def get_user_data():
     if not is_logged_in():
@@ -215,14 +214,21 @@ def get_user_data():
             return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
         
         trimestres, materias = get_periodos_materias(ano_escolar_id)
-        debug_log(f"Trimestres obtidos: {trimestres}")
-        debug_log(f"Matérias obtidas: {materias}")
+        debug_log(f"Trimestres obtidos: {trimestres}\n\n")
+        debug_log(f"Matérias obtidas: {materias}\n\n")
         
         notas = get_notas_aluno(login)
-        debug_log(f"Notas obtidas: {notas}")
+        debug_log(f"Notas obtidas: {notas}\n\n")
         
         medias = get_medias_aluno(login)
-        debug_log(f"Médias obtidas: {medias}")
+        debug_log(f"Médias obtidas: {medias}\n\n")
+
+        componentes = {}
+        for materia_id in materias.keys():
+            componentes_materia = get_componentes_materia(materia_id)
+            if componentes_materia:
+                componentes.update(componentes_materia)
+        debug_log(f"Componente obtidos: {componentes}\n\n")
 
         return jsonify({
             "status": "success",
@@ -230,6 +236,7 @@ def get_user_data():
             "materias": materias,
             "notas": notas,
             "medias": medias,
+            "componentes": componentes,
             "nome": nome  
         })
     except Exception as e:
