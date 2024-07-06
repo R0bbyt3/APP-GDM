@@ -57,6 +57,10 @@ def set_security_headers(response):
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
 
+@app.route('/')
+def home():
+    return "Hello, World!"
+
 # Rota para fornecer o token CSRF
 @app.route('/csrf-token', methods=['GET'])
 def csrf_token():
