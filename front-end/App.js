@@ -17,7 +17,7 @@ export default function App() {
   const [userData, setUserData] = useState(null);
   const [csrfToken, setCsrfToken] = useState('');
 
-  const backendUrl = 'https://seu-app.herokuapp.com';
+  const backendUrl = 'https://gerencia-notas-mika-8e6ac5230811.herokuapp.com';
 
   const [fontsLoaded] = useFonts({
     'IBMPlexMono_400Regular': require('./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_400Regular.ttf'),
