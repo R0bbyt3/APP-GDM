@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "front-end",
+    "slug": "front-end",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": {
+            "Inter_900Black": "./node_modules/@expo-google-fonts/inter/Inter_900Black.ttf",
+            "IBMPlexMono_400Regular": "./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_400Regular.ttf",
+            "IBMPlexMono_600SemiBold": "./node_modules/@expo-google-fonts/ibm-plex-mono/IBMPlexMono_600SemiBold.ttf"
+          }
+        }
+      ]
+    ]
+  }
+}
